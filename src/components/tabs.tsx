@@ -13,18 +13,8 @@ const TabView = ({
   navigate,
   deleteTab,
 }) => {
-  const [active, setActive] = useState(activeTabId === tab.id);
   const [url, setUrl] = useState(tab.url);
   const wrapperRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (activeTabId !== tab.id) {
-      setEditingTabId(null);
-      setActive(false);
-    } else {
-      setActive(true);
-    }
-  }, [activeTabId]);
 
   const handleBlur = (e: React.FocusEvent<HTMLFormElement>) => {
     const next = e.relatedTarget as Node | null; // who gets focus next
@@ -36,7 +26,7 @@ const TabView = ({
 
   return (
     <div
-      className={`${active && "bg-neutral-200/10"} ${editingTabId === tab.id && "bg-neutral-200/30"} py-1 px-2 w-full rounded-md text-sm group flex flex-row items-center justify-between`}
+      className={`${activeTabId === tab.id && "bg-neutral-200/10"} ${editingTabId === tab.id && "bg-neutral-200/30"} py-1 px-2 w-full rounded-md text-sm group flex flex-row items-center`}
       onClick={() => {
         setActiveTabId(tab.id);
       }}
@@ -44,7 +34,7 @@ const TabView = ({
       {editingTabId === tab.id ? (
         <form
           ref={wrapperRef}
-          className="flex flex-row"
+          className="flex flex-row flex-1"
           onSubmit={(e) => {
             e.preventDefault();
             navigate(tab.id, url);
@@ -57,9 +47,10 @@ const TabView = ({
             autoFocus
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            placeholder="Search or Go..."
           />
           <button
-            className="bg-white text-black text-bold rounded-md px-1"
+            className="bg-white text-black text-bold rounded-md px-1 ml-1"
             type="submit"
           >
             Go
@@ -69,7 +60,7 @@ const TabView = ({
         <div
           className="flex-1 text-nowrap overflow-hidden"
           onClick={() => {
-            if (active) {
+            if (activeTabId === tab.id) {
               setEditingTabId(tab.id);
             }
           }}
@@ -112,7 +103,7 @@ const Tabs = ({
   );
 
   return (
-    <div className="h-full w-3xs">
+    <div className="h-full w-full">
       <div
         className="h-12 w-full flex flex-row items-center px-4"
         style={{ WebkitAppRegion: "drag" }}

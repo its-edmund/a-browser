@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import BrowserWebView from "./components/BrowserWebView";
 import URLBar from "./components/URLBar";
 import Tabs from "./components/Tabs";
@@ -7,7 +7,10 @@ import Tab from "./types/Tab";
 import { nanoid } from "nanoid";
 
 const App: React.FC = () => {
+  const [tabWidth, setTabWidth] = useState(300);
   const [url, setUrl] = useState("https://example.com");
+  const [isDragging, setIsDragging] = useState(false);
+
   const [tabs, setTabs] = useState<Tab[]>([
     {
       id: nanoid(),
@@ -23,6 +26,31 @@ const App: React.FC = () => {
 
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const isResizing = useRef(false);
+
+  const handleMouseDown = () => {
+    isResizing.current = true;
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isResizing.current) {
+      const newWidth = e.clientX;
+      if (newWidth > 100 && newWidth < 600) {
+        setTabWidth(newWidth);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    isResizing.current = false;
+    setTimeout(() => {
+      setIsDragging(false);
+    }, 100);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  };
 
   useEffect(() => {
     console.log("update active tab: " + activeTabId);
@@ -37,6 +65,13 @@ const App: React.FC = () => {
         setActiveTabId(saved.activeId ?? saved.tabs[0].id);
       }
     })();
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
   }, []);
 
   const persist = (newTabs: Tab[], newActive: string) => {
@@ -63,6 +98,7 @@ const App: React.FC = () => {
     const id = nanoid();
     setTabs((t) => [...t, { id, url: "", title: "New Tab" }]); // url = '' means blank
     setActiveTabId(id);
+    setEditingTabId(id);
   };
 
   const deleteTab = (tabId: number) => {
@@ -77,7 +113,7 @@ const App: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-row text-slate-300">
-      <div className="w-3xs">
+      <div style={{ width: tabWidth }}>
         <Tabs
           tabs={tabs}
           setTabs={setTabs}
@@ -90,7 +126,16 @@ const App: React.FC = () => {
           deleteTab={deleteTab}
         />
       </div>
-      <div className="h-full flex flex-col flex-1">
+      <div
+        className="w-[5px] cursor-col-resize bg-transparent relative z-100"
+        onMouseDown={handleMouseDown}
+        onDoubleClick={() => setTabWidth(300)}
+      >
+        <div className="h-full bg-neutral-900 w-px pointer-events-none absolute right-0" />
+      </div>
+      <div
+        className={`h-full flex flex-col flex-1 ${isDragging && "select-none pointer-events-none"}`}
+      >
         {tabs.map((tab) => (
           <BrowserWebView
             key={tab.id}
@@ -100,6 +145,9 @@ const App: React.FC = () => {
           />
         ))}
       </div>
+      {isDragging && (
+        <div className="fixed inset-0 z-50 cursor-col-resize select-none" />
+      )}
     </div>
   );
 };
