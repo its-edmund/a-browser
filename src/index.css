@@ -5,5 +5,4 @@ body,
 #root {
   height: 100%;
   margin: 0; /* remove default body margin */
-  background: transparent !important;
 }

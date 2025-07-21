@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useHotkey } from "../hooks/useHotkey";
 import { nanoid } from "nanoid";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 const TabView = ({
   tab,
@@ -10,6 +10,8 @@ const TabView = ({
   setActiveTabId,
   editingTabId,
   setEditingTabId,
+  navigate,
+  deleteTab,
 }) => {
   const [active, setActive] = useState(activeTabId === tab.id);
   const [url, setUrl] = useState(tab.url);
@@ -34,13 +36,9 @@ const TabView = ({
 
   return (
     <div
-      className={`${active && "bg-neutral-200/10"} ${editingTabId === tab.id && "bg-neutral-200/30"} py-1 px-2 w-full rounded-md text-sm`}
+      className={`${active && "bg-neutral-200/10"} ${editingTabId === tab.id && "bg-neutral-200/30"} py-1 px-2 w-full rounded-md text-sm group flex flex-row items-center justify-between`}
       onClick={() => {
-        if (active) {
-          setEditingTabId(tab.id);
-        } else {
-          setActiveTabId(tab.id);
-        }
+        setActiveTabId(tab.id);
       }}
     >
       {editingTabId === tab.id ? (
@@ -49,12 +47,8 @@ const TabView = ({
           className="flex flex-row"
           onSubmit={(e) => {
             e.preventDefault();
+            navigate(tab.id, url);
             setEditingTabId(null);
-            setTabs((oldTabs) =>
-              oldTabs.map((oldTab) =>
-                tab.id === oldTab.id ? { ...oldTab, url: url } : oldTab,
-              ),
-            );
           }}
           onBlur={handleBlur}
         >
@@ -72,8 +66,25 @@ const TabView = ({
           </button>
         </form>
       ) : (
-        tab.title
+        <div
+          className="flex-1 text-nowrap overflow-hidden"
+          onClick={() => {
+            if (active) {
+              setEditingTabId(tab.id);
+            }
+          }}
+        >
+          {tab.title}
+        </div>
       )}
+      <div className="opacity-0 transition-opacity group-hover:opacity-100 duration-300 flex flex-row items-center pl-2">
+        <button
+          className="hover:bg-neutral-300/20 transition-color rounded-sm"
+          onClick={() => deleteTab(tab.id)}
+        >
+          <X size={16} />
+        </button>
+      </div>
     </div>
   );
 };
@@ -85,17 +96,19 @@ const Tabs = ({
   setActiveTabId,
   editingTabId,
   setEditingTabId,
+  navigate,
+  createTab,
+  deleteTab,
 }) => {
-  const createTab = () => {
-    const id = nanoid();
-    setTabs((t) => [...t, { id, url: "", title: "New Tab", editing: true }]); // url = '' means blank
-    setActiveTabId(id);
-  };
-
   // Cmd/Ctrl + L focuses the address bar
   useHotkey(
-    (e) => (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "t",
-    () => console.log("newTab"),
+    (e) => e.metaKey && e.key.toLowerCase() === "t",
+    () => createTab(),
+  );
+
+  useHotkey(
+    (e) => e.metaKey && e.key.toLowerCase() === "w",
+    () => deleteTab(activeTabId),
   );
 
   return (
@@ -117,12 +130,15 @@ const Tabs = ({
         {tabs.map((tab) => {
           return (
             <TabView
+              key={tab.id}
               tab={tab}
               setTabs={setTabs}
               activeTabId={activeTabId}
               setActiveTabId={setActiveTabId}
               editingTabId={editingTabId}
               setEditingTabId={setEditingTabId}
+              navigate={navigate}
+              deleteTab={deleteTab}
             />
           );
         })}

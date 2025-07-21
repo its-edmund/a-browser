@@ -22,8 +22,13 @@ const App: React.FC = () => {
   ]);
 
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
-  /* first render → requestState → hydrate */
+  useEffect(() => {
+    console.log("update active tab: " + activeTabId);
+    setActiveTab(tabs.find((tab) => tab.id === activeTabId));
+  }, [activeTabId]);
+
   useEffect(() => {
     (async () => {
       const saved = await window.tabsAPI.requestState(); // {tabs, activeId}
@@ -40,14 +45,38 @@ const App: React.FC = () => {
   };
 
   const [editingTabId, setEditingTabId] = useState<number | null>(null);
-  const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
-  useEffect(() => {
-    persist(tabs, activeTabId);
-  }, [tabs, activeTabId]);
+  const updateTitle = (tabId: number, title: string) => {
+    const next = tabs.map((t) => (t.id === tabId ? { ...t, title } : t));
+    setTabs(next);
+    persist(next, activeTab.id);
+  };
+
+  const navigate = (tabId: number, url: string) => {
+    const next = tabs.map((t) => (t.id === tabId ? { ...t, url } : t));
+    setTabs(next);
+    setActiveTabId(tabId);
+    persist(next, activeTab.id);
+  };
+
+  const createTab = () => {
+    const id = nanoid();
+    setTabs((t) => [...t, { id, url: "", title: "New Tab" }]); // url = '' means blank
+    setActiveTabId(id);
+  };
+
+  const deleteTab = (tabId: number) => {
+    const next = tabs.filter((t) => t.id !== tabId);
+    const nextActive =
+      activeTabId === tabId ? (next.length ? next[0].id : "") : activeTabId;
+    console.log(nextActive);
+    setTabs(next);
+    setActiveTabId(nextActive);
+    persist(next, nextActive);
+  };
 
   return (
-    <div className="w-full h-full flex flex-row bg-transparent text-slate-300">
+    <div className="w-full h-full flex flex-row text-slate-300">
       <div className="w-3xs">
         <Tabs
           tabs={tabs}
@@ -56,10 +85,20 @@ const App: React.FC = () => {
           setActiveTabId={setActiveTabId}
           editingTabId={editingTabId}
           setEditingTabId={setEditingTabId}
+          navigate={navigate}
+          createTab={createTab}
+          deleteTab={deleteTab}
         />
       </div>
       <div className="h-full flex flex-col flex-1">
-        <BrowserWebView key={activeTab.id} url={activeTab.url} />
+        {tabs.map((tab) => (
+          <BrowserWebView
+            key={tab.id}
+            tab={tab}
+            hidden={tab.id !== activeTabId}
+            updateTitle={updateTitle}
+          />
+        ))}
       </div>
     </div>
   );

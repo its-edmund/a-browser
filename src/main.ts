@@ -22,8 +22,11 @@ const createWindow = () => {
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.join(__dirname, "preload.js"),
+      // preload: MAIN_WINDOW_VITE_DEV_SERVER_URL,
     },
   });
+
+  console.log("thing2: " + MAIN_WINDOW_VITE_DEV_SERVER_URL);
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
