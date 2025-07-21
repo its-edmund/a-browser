@@ -26,10 +26,21 @@
  * ```
  */
 
+// src/renderer.ts
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 import "./index.css";
 
-console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite',
-);
+const rootElement = document.getElementById("root");
 
-import "./app";
+if (rootElement) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+} else {
+  console.error("❌ No #root element found in index.html");
+}
