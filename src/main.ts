@@ -1,4 +1,11 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, session } from "electron";
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  ipcMain,
+  session,
+  nativeTheme,
+} from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { tabStore } from "./tabStore";
@@ -16,7 +23,8 @@ const createWindow = () => {
     titleBarStyle: "hiddenInset",
     transparent: true, // allows OS pixels to show through
     backgroundColor: "#00000000", // required on Windows
-    vibrancy: "menu", // macOS Big Sur+ frosted look
+    visualEffectState: "active",
+    vibrancy: "sidebar",
     webPreferences: {
       webviewTag: true,
       contextIsolation: true,
@@ -58,6 +66,10 @@ const createWindow = () => {
     globalShortcut.unregisterAll();
   });
 };
+
+app.whenReady().then(() => {
+  nativeTheme.themeSource = "dark";
+});
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();

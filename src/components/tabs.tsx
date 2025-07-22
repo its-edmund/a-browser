@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+
 import { useHotkey } from "../hooks/useHotkey";
 import { nanoid } from "nanoid";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ArrowLeft, ArrowRight } from "lucide-react";
 
 const TabView = ({
   tab,
@@ -14,13 +16,17 @@ const TabView = ({
   deleteTab,
 }) => {
   const [url, setUrl] = useState(tab.url);
-  const wrapperRef = useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleBlur = (e: React.FocusEvent<HTMLFormElement>) => {
-    const next = e.relatedTarget as Node | null; // who gets focus next
-    if (!wrapperRef.current?.contains(next)) {
+  const handleFocus = () => {
+    setEditingTabId(tab.id);
+  };
+
+  const handleBlur = () => {
+    // Check if the focus moved outside the form
+    if (formRef.current && !formRef.current.contains(document.activeElement)) {
       setEditingTabId(null);
-      setUrl(tab.url);
     }
   };
 
@@ -33,21 +39,26 @@ const TabView = ({
     >
       {editingTabId === tab.id ? (
         <form
-          ref={wrapperRef}
+          ref={formRef}
           className="flex flex-row flex-1"
           onSubmit={(e) => {
             e.preventDefault();
+            console.log("submit");
             navigate(tab.id, url);
             setEditingTabId(null);
           }}
+          onFocus={handleFocus}
           onBlur={handleBlur}
         >
           <input
+            ref={inputRef}
             className="outline-none w-full"
             autoFocus
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Search or Go..."
+            onFocus={handleFocus}
+            onBlur={handleBlur}
           />
           <button
             className="bg-white text-black text-bold rounded-md px-1 ml-1"
@@ -90,6 +101,10 @@ const Tabs = ({
   navigate,
   createTab,
   deleteTab,
+  goForward,
+  goBack,
+  canGoForward,
+  canGoBack,
 }) => {
   useHotkey("ctrl+t", () => createTab());
 
@@ -100,16 +115,46 @@ const Tabs = ({
   return (
     <div className="h-full w-full">
       <div
-        className="h-12 w-full flex flex-row items-center px-4"
+        className="h-[40px] w-full flex flex-row items-center px-4 pl-[76px]"
         style={{ WebkitAppRegion: "drag" }}
       >
-        <div className="ml-auto" style={{ WebkitAppRegion: "no-drag" }}>
-          <button
-            className="p-1 rounded-md hover:bg-slate-200/10"
-            onClick={() => createTab()}
+        <div className="flex flex-row justify-between items-center flex-1">
+          <div
+            className="flex flex-row flex-1 items-center"
+            style={{ WebkitAppRegion: "no-drag" }}
           >
-            <Plus size={16} />
-          </button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-6"
+              disabled={!canGoBack}
+              onClick={goBack}
+            >
+              <ArrowLeft strokeWidth={3} size={16} />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-6"
+              disabled={!canGoForward}
+              onClick={goForward}
+            >
+              <ArrowRight strokeWidth={3} size={16} />
+            </Button>
+          </div>
+          <div
+            className="flex items-center"
+            style={{ WebkitAppRegion: "no-drag" }}
+          >
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-6"
+              onClick={() => createTab()}
+            >
+              <Plus size={16} strokeWidth={3} />
+            </Button>
+          </div>
         </div>
       </div>
       <div className="flex flex-col m-3">

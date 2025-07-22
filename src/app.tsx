@@ -27,6 +27,40 @@ const App: React.FC = () => {
   const [activeTabId, setActiveTabId] = useState(tabs[0].id);
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
   const isResizing = useRef(false);
+  const webviewRef = useRef(null);
+
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+
+  const updateNavState = () => {
+    const webview = webviewRef.current;
+    if (!webview) return;
+    setCanGoBack(webview.canGoBack());
+    setCanGoForward(webview.canGoForward());
+  };
+
+  useEffect(() => {
+    const webview = webviewRef.current;
+    if (!webview) return;
+
+    webview.addEventListener("did-navigate", updateNavState);
+    webview.addEventListener("did-navigate-in-page", updateNavState);
+
+    return () => {
+      webview.removeEventListener("did-navigate", updateNavState);
+      webview.removeEventListener("did-navigate-in-page", updateNavState);
+    };
+  }, [webviewRef, webviewRef.current]);
+
+  const goBack = () => {
+    const webview = webviewRef.current;
+    if (webview?.canGoBack()) webview.goBack();
+  };
+
+  const goForward = () => {
+    const webview = webviewRef.current;
+    if (webview?.canGoForward()) webview.goForward();
+  };
 
   const handleMouseDown = () => {
     isResizing.current = true;
@@ -54,7 +88,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setActiveTab(tabs.find((tab) => tab.id === activeTabId));
-  }, [activeTabId]);
+  }, [activeTabId, tabs]);
 
   useEffect(() => {
     (async () => {
@@ -103,7 +137,6 @@ const App: React.FC = () => {
     const next = tabs.filter((t) => t.id !== tabId);
     const nextActive =
       activeTabId === tabId ? (next.length ? next[0].id : "") : activeTabId;
-    console.log(nextActive);
     setTabs(next);
     setActiveTabId(nextActive);
     persist(next, nextActive);
@@ -122,6 +155,10 @@ const App: React.FC = () => {
           navigate={navigate}
           createTab={createTab}
           deleteTab={deleteTab}
+          goForward={goForward}
+          goBack={goBack}
+          canGoForward={canGoForward}
+          canGoBack={canGoBack}
         />
       </div>
       <div
@@ -134,16 +171,14 @@ const App: React.FC = () => {
       <div
         className={`h-full flex flex-col flex-1 ${isDragging && "select-none pointer-events-none"}`}
       >
-        {tabs.map((tab) => {
-          return (
-            <BrowserWebView
-              key={tab.id}
-              tab={tab}
-              hidden={tab.id !== activeTabId}
-              updateTitle={updateTitle}
-            />
-          );
-        })}
+        {activeTab && (
+          <BrowserWebView
+            tab={activeTab}
+            updateTitle={updateTitle}
+            ref={webviewRef}
+            hidden={false}
+          />
+        )}
       </div>
       {isDragging && (
         <div className="fixed inset-0 z-50 cursor-col-resize select-none" />
