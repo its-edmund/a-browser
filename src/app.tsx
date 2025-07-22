@@ -53,7 +53,6 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log("update active tab: " + activeTabId);
     setActiveTab(tabs.find((tab) => tab.id === activeTabId));
   }, [activeTabId]);
 
@@ -75,7 +74,6 @@ const App: React.FC = () => {
   }, []);
 
   const persist = (newTabs: Tab[], newActive: string) => {
-    console.log("persisting... " + newTabs);
     window.tabsAPI.saveState({ tabs: newTabs, activeId: newActive });
   };
 
@@ -84,14 +82,14 @@ const App: React.FC = () => {
   const updateTitle = (tabId: number, title: string) => {
     const next = tabs.map((t) => (t.id === tabId ? { ...t, title } : t));
     setTabs(next);
-    persist(next, activeTab.id);
+    persist(next, activeTabId);
   };
 
   const navigate = (tabId: number, url: string) => {
     const next = tabs.map((t) => (t.id === tabId ? { ...t, url } : t));
     setTabs(next);
     setActiveTabId(tabId);
-    persist(next, activeTab.id);
+    persist(next, activeTabId);
   };
 
   const createTab = () => {
@@ -136,14 +134,16 @@ const App: React.FC = () => {
       <div
         className={`h-full flex flex-col flex-1 ${isDragging && "select-none pointer-events-none"}`}
       >
-        {tabs.map((tab) => (
-          <BrowserWebView
-            key={tab.id}
-            tab={tab}
-            hidden={tab.id !== activeTabId}
-            updateTitle={updateTitle}
-          />
-        ))}
+        {tabs.map((tab) => {
+          return (
+            <BrowserWebView
+              key={tab.id}
+              tab={tab}
+              hidden={tab.id !== activeTabId}
+              updateTitle={updateTitle}
+            />
+          );
+        })}
       </div>
       {isDragging && (
         <div className="fixed inset-0 z-50 cursor-col-resize select-none" />

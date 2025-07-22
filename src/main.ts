@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, session } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { tabStore } from "./tabStore";
@@ -26,8 +26,6 @@ const createWindow = () => {
     },
   });
 
-  console.log("thing2: " + MAIN_WINDOW_VITE_DEV_SERVER_URL);
-
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -37,14 +35,41 @@ const createWindow = () => {
     );
   }
 
-  // ⌘L / Ctrl+L  →  tell renderer to focus the address bar
-  globalShortcut.register("CommandOrControl+L", () => {
-    win.webContents.send("hotkey:focus-address");
+  const HOTKEYS = [
+    { combo: "CommandOrControl+T", id: "ctrl+t" },
+    { combo: "CommandOrControl+W", id: "ctrl+w" },
+    { combo: "CommandOrControl+L", id: "ctrl+l" },
+  ];
+
+  mainWindow.on("focus", () => {
+    HOTKEYS.forEach(({ combo, id }) => {
+      if (!globalShortcut.isRegistered(combo)) {
+        globalShortcut.register(combo, () => {
+          const focused = BrowserWindow.getFocusedWindow();
+          if (focused) {
+            focused.webContents.send("hotkey-fired", id);
+          }
+        });
+      }
+    });
   });
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  mainWindow.on("blur", () => {
+    globalShortcut.unregisterAll();
+  });
 };
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
+
+ipcMain.handle("cookie-set", async (_event, cookie) => {
+  return session.defaultSession.cookies.set(cookie);
+});
+
+ipcMain.handle("cookie-get", async (_event, filter) => {
+  return session.defaultSession.cookies.get(filter);
+});
 
 ipcMain.handle("tabs:request", () => tabStore.store);
 

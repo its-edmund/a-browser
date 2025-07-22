@@ -91,16 +91,11 @@ const Tabs = ({
   createTab,
   deleteTab,
 }) => {
-  // Cmd/Ctrl + L focuses the address bar
-  useHotkey(
-    (e) => e.metaKey && e.key.toLowerCase() === "t",
-    () => createTab(),
-  );
+  useHotkey("ctrl+t", () => createTab());
 
-  useHotkey(
-    (e) => e.metaKey && e.key.toLowerCase() === "w",
-    () => deleteTab(activeTabId),
-  );
+  useHotkey("ctrl+w", () => deleteTab(activeTabId));
+
+  useHotkey("ctrl+l", () => setEditingTabId(activeTabId));
 
   return (
     <div className="h-full w-full">
